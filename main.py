@@ -19,8 +19,14 @@ def httpgetremaster(host, path):
     return response
 
 def getweather():
-    latitude = "44.8650212"
-    longitude = "-0.5774944"
+    #Hambourg
+    latitude = "50"
+    longitude = "6"
+    
+    #Bordeaux
+    #latitude = "44.8650212"
+    #longitude = "-0.5774944"
+
     host = "api.openweathermap.org"
     path = "/data/2.5/weather?lat=" + latitude + "&lon=" + longitude + "&appid=c1c60bb1bc8fbdcb97ee83119e4cc2c6"
     raw = httpgetremaster(host, path).decode()
@@ -30,21 +36,24 @@ def getweather():
       return False
     return True
 
-p2 = Pin(2, Pin.OUT)
+led_green = Pin(0, Pin.OUT)
+led_red = Pin(4, Pin.OUT)
 
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(True)
 sta_if.scan()
 sta_if.connect('POCO X7 Pro Benjamin', 'benjamin1234')
+
 if sta_if.isconnected():
   print("Connexion WiFi OK")
   while True:
+      led_red.off()
+      led_green.off()
       if (getweather()):
-          p2.on()
+          led_green.on()
+          led_red.off()
           time.sleep(15)
       else:
-          for i in range(15):
-              p2.on()
-              time.sleep_ms(500)
-              p2.off()
-              time.sleep_ms(500)
+          led_green.off()
+          led_red.on()
+          time.sleep(15)

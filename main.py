@@ -19,8 +19,10 @@ def httpgetremaster(host, path):
     return response
 
 def getweather():
+    latitude = "44.8650212"
+    longitude = "-0.5774944"
     host = "api.openweathermap.org"
-    path = "/data/2.5/weather?lat=53.5586627&lon=9.6070582&appid=c1c60bb1bc8fbdcb97ee83119e4cc2c6"
+    path = "/data/2.5/weather?lat=" + latitude + "&lon=" + longitude + "&appid=c1c60bb1bc8fbdcb97ee83119e4cc2c6"
     raw = httpgetremaster(host, path).decode()
     data = json.loads(raw[raw.find("\r\n\r\n") + 4:])
     print(data['weather'][0]['main'])

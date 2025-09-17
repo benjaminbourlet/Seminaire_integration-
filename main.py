@@ -1,40 +1,15 @@
 import network
-import usocket
+import urequests
 import time
-import json
 from machine import Pin
 
-def httpgetremaster(host, path):
-    addr = usocket.getaddrinfo(host, 80)[0][-1]
-    s = usocket.socket()
-    s.connect(addr)
-    s.send("GET {} HTTP/1.0\r\nHost: {}\r\n\r\n".format(path, host).encode())
-    response = b""
-    while True:
-        data = s.recv(100)
-        if not data:
-            break
-        response += data
-    s.close()
-    return response
-
 def getweather():
-    #Hambourg
     latitude = "50"
     longitude = "6"
-    
-    #Bordeaux
-    #latitude = "44.8650212"
-    #longitude = "-0.5774944"
 
-    host = "api.openweathermap.org"
-    path = "/data/2.5/weather?lat=" + latitude + "&lon=" + longitude + "&appid=c1c60bb1bc8fbdcb97ee83119e4cc2c6"
-    raw = httpgetremaster(host, path).decode()
-    data = json.loads(raw[raw.find("\r\n\r\n") + 4:])
-    print(data['weather'][0]['main'])
-    if data['weather'][0]['id'] < 800:
-      return False
-    return True
+    data = urequests.get("https://api.openweathermap.org/data/2.5/weather?lat=" + latitude + "&lon=" + longitude + "&appid=c1c60bb1bc8fbdcb97ee83119e4cc2c6&units=metric").json()
+    print(data)
+    return data['weather'][0]['id'] > 800
 
 led_green = Pin(0, Pin.OUT)
 led_red = Pin(4, Pin.OUT)
@@ -57,3 +32,5 @@ if sta_if.isconnected():
           led_green.off()
           led_red.on()
           time.sleep(15)
+else:
+    # activer LED connexion

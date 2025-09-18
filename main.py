@@ -1,12 +1,25 @@
 import network
 import urequests
+from time import sleep
 import time
 import neopixel
-from machine import Pin, PWM
+from machine import Pin, PWM, SoftI2C
+from machine_i2c_lcd import I2cLcd
 
+#spécification du bandeau led
 PIN_DATA = 18
 nb_leds = 2
 led = neopixel.NeoPixel(Pin(PIN_DATA, Pin.OUT), nb_leds)
+
+#spécification ecran lcd
+I2C_ADDR = 0x27
+I2C_NUM_ROWS = 2
+I2C_NUM_COLS = 16
+
+#initialisation de l'ecran sur Pin 21(SDA) et 22(SCL)
+i2c = SoftI2C(sda=Pin(21), scl=Pin(22), freq=400000)
+
+lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
 
 def getweather():
@@ -41,13 +54,43 @@ def setupWifiCon():
         wifiCon = network.WLAN(network.STA_IF)
         wifiCon.active(True)
         wifiCon.scan()
-        wifiCon.connect('POCO X7 Pro Benjamin', 'benjamin1234')
+        #tel de benjamin
+        #wifiCon.connect('POCO X7 Pro Benjamin', 'benjamin1234')
+        #tel de benji
+        wifiCon.connect('Iphone de benji', 'a1z2e3r4t5')
         return True
     except OSError as e:
         print("Erreur de connexion wifi : " + str(e))
         return False
 
+#///////////////////////////////////////BLOC ECRAN LCD///////////////////////////////////////#
 
+def display_information(meteo, temperature, humidity):
+    # Ligne d'en-tête
+    lcd.clear()
+    lcd.move_to(0, 0)
+    lcd.putstr("EN CE MOMENT :")
+
+    # Afficher météo → attendre
+    lcd.move_to(0, 1)
+    lcd.putstr("il fait " + str(meteo))
+    sleep(3)
+
+    # Effacer juste la 2e ligne puis afficher température
+    lcd.move_to(0, 1)
+    lcd.putstr(" " * 16)  # efface la ligne
+    lcd.move_to(0, 1)
+    lcd.putstr("TEMP : " + str(temperature) + chr(223) + "C")
+    sleep(3)
+
+    # Effacer juste la 2e ligne puis afficher humidité
+    lcd.move_to(0, 1)
+    lcd.putstr(" " * 16)
+    lcd.move_to(0, 1)
+    lcd.putstr("HUMIDITE " + str(humidity) + "%")
+    sleep(3)
+
+#//////////////////////////////////////BLOC BANDEAU LED//////////////////////////////////////#
 # allumage des leds
 def set_led(status, color):
     if status == 0:
@@ -170,6 +213,7 @@ if setupWifiCon():
             currentweather = getweather()
             print(currentweather)
             setledwind(windconversion(currentweather["wind"]))
+            display_information(currentweather["meteo"], currentweather["temperature"], currentweather["humidity"])
             print(windconversion(currentweather["wind"]))
             if (currentweather["id_meteo"]) >= 800:
                 greenled.on()
@@ -177,4 +221,4 @@ if setupWifiCon():
             else:
                 greenled.off()
                 redled.on()
-            time.sleep(15)
+            #time.sleep(15)

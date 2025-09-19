@@ -6,46 +6,30 @@ import neopixel
 from machine import Pin, PWM, SoftI2C
 from machine_i2c_lcd import I2cLcd
 
-#spécification du bandeau led
+# spécification du bandeau led
 PIN_DATA = 18
 nb_leds = 2
 led = neopixel.NeoPixel(Pin(PIN_DATA, Pin.OUT), nb_leds)
 
-#spécification ecran lcd
+# spécification ecran lcd
 I2C_ADDR = 0x27
 I2C_NUM_ROWS = 2
 I2C_NUM_COLS = 16
 
-#initialisation de l'ecran sur Pin 21(SDA) et 22(SCL)
+# initialisation de l'ecran sur Pin 21(SDA) et 22(SCL)
 i2c = SoftI2C(sda=Pin(21), scl=Pin(22), freq=400000)
 
 lcd = I2cLcd(i2c, I2C_ADDR, I2C_NUM_ROWS, I2C_NUM_COLS)
 
-#/////////////////////////////////////// BLOC connexion ////////////////////////////////////////#
+wifiCon = network.WLAN(network.STA_IF)
+
+
+# /////////////////////////////////////// BLOC connexion ////////////////////////////////////////#
 def connexion():
-    if setupWifiCon():
-        connexionled.on()
-        # playsoundonconnection(speakerPWM, 5000, 0.25)
-        lcd.clear()
-        lcd.move_to(0, 0)
-        lcd.putstr("Connexion ok")
-        print("connexion ok")
-    else:
-        lcd.clear()
-        lcd.move_to(0, 0)
-        lcd.putstr("Connexion perdu")
-        print("connexion perdu")
-        while setupWifiCon() == False:
-            connexionled.on()
-            sleep(1)
-            connexionled.off()
-            sleep(1)
-        
-            
-            
-        
-        
-        
+    # playsoundonconnection(speakerPWM, 5000, 0.25)
+    lcd.clear()
+    lcd.move_to(0, 0)
+    lcd.putstr("Connexion OK")
 
 
 def getweather():
@@ -77,32 +61,33 @@ def getweather():
 
 def setupWifiCon():
     try:
-        wifiCon = network.WLAN(network.STA_IF)
         wifiCon.active(True)
         wifiCon.scan()
-        #tel de benjamin
-        #wifiCon.connect('POCO X7 Pro Benjamin', 'benjamin1234')
-        #tel de benji
+        # tel de benjamin
+        # wifiCon.connect('POCO X7 Pro Benjamin', 'benjamin1234')
+        # tel de benji
         wifiCon.connect('Iphone de benji', 'a1z2e3r4t5')
         return True
     except OSError as e:
+        clignoLedCon()
         print("Erreur de connexion wifi : " + str(e))
         return False
-    
-#////////////////////////////////////BLOC indicateur led/////////////////////////////////////#    
+
+
+# ////////////////////////////////////BLOC indicateur led/////////////////////////////////////#
 
 def indicator_led(id_weather):
     redled.off()
     greenled.off()
-    if (id_weather) >= 800:
+    if id_weather >= 800:
         greenled.on()
         redled.off()
     else:
         greenled.off()
         redled.on()
-    
 
-#///////////////////////////////////////BLOC ECRAN LCD///////////////////////////////////////#
+
+# ///////////////////////////////////////BLOC ECRAN LCD///////////////////////////////////////#
 
 def display_information(meteo, temperature, humidity):
     # Ligne d'en-tête
@@ -129,7 +114,8 @@ def display_information(meteo, temperature, humidity):
     lcd.putstr("HUMIDITE " + str(humidity) + "%")
     sleep(3)
 
-#//////////////////////////////////////BLOC BANDEAU LED//////////////////////////////////////#
+
+# //////////////////////////////////////BLOC BANDEAU LED//////////////////////////////////////#
 
 # 1 vert -> force 0
 # 2 vert -> force 1-2
@@ -230,6 +216,13 @@ def playsoundonconnection(speaker, freq, dur):
         speaker.deinit()
 
 
+def clignoLedCon():
+    connexionled.on()
+    sleep(1)
+    connexionled.off()
+    sleep(1)
+
+
 # PROGRAMME PRINCIPAL
 
 # Création et reset des LEDS rouge/vert et connexion
@@ -244,14 +237,31 @@ redled.off()
 connexionled.off()
 speakerPWM.duty(0)
 
-while setupWifiCon():
-    connexion()
-    currentweather = getweather()
-    print(currentweather)
-    setledwind(windconversion(currentweather["wind"]))
-    indicator_led(currentweather["id_meteo"])
-    display_information(currentweather["meteo"], currentweather["temperature"], currentweather["humidity"])
-    print(windconversion(currentweather["wind"]))
-    connexion()
-    
-            #time.sleep(15)
+lcd.putstr("demarrage ...")
+sleep(3)
+
+while True:
+    if setupWifiCon():
+        while wifiCon.isconnected():
+            connexionled.on()
+            currentweather = getweather()
+            print(currentweather)
+            setledwind(windconversion(currentweather["wind"]))
+            indicator_led(currentweather["id_meteo"])
+            display_information(currentweather["meteo"], currentweather["temperature"], currentweather["humidity"])
+            print(windconversion(currentweather["wind"]))
+            setupWifiCon()
+        while not wifiCon.isconnected():
+            lcd.clear()
+            lcd.move_to(0, 0)
+            lcd.putstr("Connexion perdue")
+            print("connexion perdue")
+            setupWifiCon()
+    else:
+        lcd.clear()
+        lcd.move_to(0, 0)
+        lcd.putstr("Aucune connexion")
+        print("Aucune connexion")
+        while not wifiCon.isconnected():
+            setupWifiCon()
+
